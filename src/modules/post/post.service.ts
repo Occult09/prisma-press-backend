@@ -38,7 +38,7 @@ const getMyPostFromDB = async (userId: string) => {
         include: {
             comments: true,
             _count: {
-                select : {
+                select: {
                     comments: true
                 }
             }
@@ -78,17 +78,17 @@ const updatePostIntoDB = async (postId: string, payload: IUpdatePostPayload, aut
         }
     })
 
-    if(!isAdmin && post.authorId !== authorId){
+    if (!isAdmin && post.authorId !== authorId) {
         throw new Error("You dont have access to update this post")
     }
 
     const updatedPost = await prisma.post.update({
-        where : {
+        where: {
             id: postId
         },
         data: payload,
-        include : {
-            author : {
+        include: {
+            author: {
                 omit: {
                     password: true
                 }
@@ -100,12 +100,29 @@ const updatePostIntoDB = async (postId: string, payload: IUpdatePostPayload, aut
     return updatedPost;
 }
 
+const deletePostFromDB = async (postId: string, authorId: string, isAdmin: boolean) => {
+    const post = await prisma.post.findUniqueOrThrow({
+        where: {
+            id: postId
+        }
+    })
 
+    if(!isAdmin && post.authorId !== authorId){
+        throw new Error("You don't have access to delete this post!");
+    }
+
+    await prisma.post.delete({
+        where: {
+            id: postId
+        }
+    })
+}
 
 export const postService = {
     getAllPostsFromDB,
     createPostIntoDB,
     getMyPostFromDB,
     getSinglePostFromDB,
-    updatePostIntoDB
+    updatePostIntoDB,
+    deletePostFromDB
 }
