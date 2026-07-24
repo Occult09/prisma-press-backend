@@ -55,7 +55,7 @@ const getPostsStats = catchAsync(async (req: Request, res: Response, next: NextF
 const getSinglePost = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const postId = req.params.postId;
 
-    if(!postId) {
+    if (!postId) {
         throw new Error("Post id required!");
     }
 
@@ -72,7 +72,21 @@ const getSinglePost = catchAsync(async (req: Request, res: Response, next: NextF
 })
 
 const updatePost = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    const postId = req.params.postId;
+    const authorId = req.user.id;
+    const payload = req.body;
+    const isAdmin = req.user.role === 'ADMIN';
 
+    const result = await postService.updatePostIntoDB(postId as string, payload, authorId as string, isAdmin);
+    
+    sendResponse(res, {
+        success: true,
+        statusCode: httpStatus.OK,
+        message: "Post updated successfully!",
+        data: {
+            result
+        }
+    })
 })
 
 const deletePost = catchAsync(async (req: Request, res: Response, next: NextFunction) => {

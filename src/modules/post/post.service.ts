@@ -1,5 +1,5 @@
 import { prisma } from "../../lib/prisma"
-import { ICreatePostPaylod } from "./post.interface"
+import { ICreatePostPaylod, IUpdatePostPayload } from "./post.interface"
 
 const getAllPostsFromDB = async () => {
     const posts = await prisma.post.findMany({
@@ -71,11 +71,41 @@ const getSinglePostFromDB = async (postId: string) => {
     return updatedPost;
 }
 
+const updatePostIntoDB = async (postId: string, payload: IUpdatePostPayload, authorId: string, isAdmin: boolean) => {
+    const post = await prisma.post.findUniqueOrThrow({
+        where: {
+            id: postId
+        }
+    })
+
+    if(!isAdmin && post.authorId !== authorId){
+        throw new Error("You dont have access to update this post")
+    }
+
+    const updatedPost = await prisma.post.update({
+        where : {
+            id: postId
+        },
+        data: payload,
+        include : {
+            author : {
+                omit: {
+                    password: true
+                }
+            },
+            comments: true
+        }
+    });
+
+    return updatedPost;
+}
+
 
 
 export const postService = {
     getAllPostsFromDB,
     createPostIntoDB,
     getMyPostFromDB,
-    getSinglePostFromDB
+    getSinglePostFromDB,
+    updatePostIntoDB
 }
