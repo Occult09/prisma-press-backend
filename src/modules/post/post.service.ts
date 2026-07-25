@@ -1,3 +1,4 @@
+import { CommentStatus } from "../../../generated/prisma/enums";
 import { prisma } from "../../lib/prisma"
 import { ICreatePostPaylod, IUpdatePostPayload } from "./post.interface"
 
@@ -49,26 +50,48 @@ const getMyPostFromDB = async (userId: string) => {
 }
 
 const getSinglePostFromDB = async (postId: string) => {
-    const updatedPost = await prisma.post.update({
-        where: {
-            id: postId
-        },
-        data: {
-            views: {
-                increment: 1
-            }
-        },
-        include: {
-            author: {
-                omit: {
-                    password: true
+    const transactionResult = await prisma.$transaction(
+        async (tx) => {
+            await tx.post.update({
+                where: {
+                    id: postId
+                },
+                data: {
+                    views: {
+                        increment: 1
+                    }
                 }
-            },
-            comments: true
-        }
-    })
+            })
 
-    return updatedPost;
+            const post = await tx.post.findUniqueOrThrow({
+                where: {
+                    id: postId
+                },
+                include: {
+                    author: {
+                        omit: {
+                            password: true
+                        }
+                    },
+                    comments: {
+                        where: {
+                            status: CommentStatus.APPROVED
+                        },
+                        orderBy: {
+                            createdAt: "desc"
+                        }
+                    },
+                    _count: {
+                        select: {
+                            comments: true
+                        }
+                    }
+                }
+            })
+            return post;
+        }
+    )
+    return transactionResult;
 }
 
 const updatePostIntoDB = async (postId: string, payload: IUpdatePostPayload, authorId: string, isAdmin: boolean) => {
@@ -107,7 +130,7 @@ const deletePostFromDB = async (postId: string, authorId: string, isAdmin: boole
         }
     })
 
-    if(!isAdmin && post.authorId !== authorId){
+    if (!isAdmin && post.authorId !== authorId) {
         throw new Error("You don't have access to delete this post!");
     }
 
