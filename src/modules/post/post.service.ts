@@ -1,4 +1,4 @@
-import { CommentStatus } from "../../../generated/prisma/enums";
+import { CommentStatus, PostStatus } from "../../../generated/prisma/enums";
 import { prisma } from "../../lib/prisma"
 import { ICreatePostPaylod, IUpdatePostPayload } from "./post.interface"
 
@@ -141,11 +141,64 @@ const deletePostFromDB = async (postId: string, authorId: string, isAdmin: boole
     })
 }
 
+const getPostsStats = async () => {
+    const transactionResult = await prisma.$transaction(
+        async (tx) => {
+            const [totalPosts, totalPublishedPosts, totalArchivedPosts, totalDraftPosts, totalComments, totalApprovedComments, totalRejectedComments, totalPostViews] = await Promise.all([
+                await tx.post.count(),
+                await tx.post.count({
+                    where: {
+                        status: PostStatus.PUBLISHED
+                    }
+                }),
+                await tx.post.count({
+                    where: {
+                        status: PostStatus.DRAFT
+                    }
+                }),
+                await tx.post.count({
+                    where: {
+                        status: PostStatus.ARCHIVED
+                    }
+                }),
+                await tx.comment.count(),
+                await tx.comment.count({
+                    where: {
+                        status: CommentStatus.APPROVED
+                    }
+                }),
+                await tx.comment.count({
+                    where: {
+                        status: CommentStatus.REJECT
+                    }
+                }),
+                await tx.post.aggregate({
+                    _sum: {
+                        views: true
+                    }
+                })
+            ])
+            return {
+                totalPosts,
+                totalPublishedPosts,
+                totalArchivedPosts,
+                totalDraftPosts,
+                totalComments,
+                totalApprovedComments,
+                totalRejectedComments,
+                totalPostViews: totalPostViews._sum.views
+            }
+        }
+    )
+    return transactionResult;
+}
+
 export const postService = {
     getAllPostsFromDB,
     createPostIntoDB,
     getMyPostFromDB,
     getSinglePostFromDB,
     updatePostIntoDB,
-    deletePostFromDB
+    deletePostFromDB,
+    getPostsStats
 }

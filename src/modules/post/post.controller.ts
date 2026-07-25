@@ -49,7 +49,15 @@ const getMyPosts = catchAsync(async (req: Request, res: Response, next: NextFunc
 })
 
 const getPostsStats = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    const result = await postService.getPostsStats();
 
+    sendResponse(res, {
+        success: true,
+        statusCode: httpStatus.OK,
+        message: "Posts Stats retrieved successfully!",
+        data: result
+        
+    })
 })
 
 const getSinglePost = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
