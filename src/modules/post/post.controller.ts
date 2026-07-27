@@ -5,7 +5,8 @@ import { sendResponse } from "../../utils/sendResponse";
 import httpStatus from "http-status";
 
 const getAllPosts = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    const result = await postService.getAllPostsFromDB();
+    const query = req.query;
+    const result = await postService.getAllPostsFromDB(query);
 
     sendResponse(res, {
         success: true,
